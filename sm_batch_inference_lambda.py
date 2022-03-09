@@ -15,11 +15,9 @@ def lambda_handler(event, context):
     bucket = event['Records'][0]['s3']['bucket']['name']
     key = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'], encoding='utf-8')
 
-    try:
-        callSMBatchInf(key, bucket, outBucket="veritoll-sm-inf", prefix="inf-xgb-")
+    resp = callSMBatchInf(key, bucket, outBucket="rk-veritoll-output", prefix="inf-xgb-")
 
-    except Exception as e:
-        print(e)
+    print(resp)
 
     return {
         'statusCode': 200,
@@ -64,9 +62,10 @@ def removeHeader(bucket, key, outBucket):
             return
 
 
-def callSMBatchInf(key, bucket, outBucket="veritoll-sm-inf", prefix="inf-xgb", model_name):
+def callSMBatchInf(key, bucket, outBucket="rk-veritoll-output", prefix="inf-rcf",
+                   model_name='randomcutforest-2022-03-09-06-12-21-577'):
     # List Models that has name canvas in it
-   
+
     ## we will grab the latest trained model. if you have multiple models, this can move out to config.json file to be saved in S3
     modelName = model_name
     print(modelName)
@@ -83,10 +82,19 @@ def callSMBatchInf(key, bucket, outBucket="veritoll-sm-inf", prefix="inf-xgb", m
         "ContentType": "text/csv",
         "CompressionType": "None",
         "SplitType": "Line",
+
     }
 
     transform_output = {
         "S3OutputPath": "s3://{}/{}/inference-results".format(outBucket, prefix),
+        "AssembleWith": "Line",
+        "Accept": "text/csv"
+
+    }
+
+    data_processing = {
+        'InputFilter': "$[2:2]",
+        'JoinSource': 'Input'
     }
 
     transform_resources = {"InstanceType": "ml.m5.4xlarge", "InstanceCount": 1}
@@ -97,4 +105,5 @@ def callSMBatchInf(key, bucket, outBucket="veritoll-sm-inf", prefix="inf-xgb", m
         TransformInput=transform_input,
         TransformOutput=transform_output,
         TransformResources=transform_resources,
+        DataProcessing=data_processing
     )

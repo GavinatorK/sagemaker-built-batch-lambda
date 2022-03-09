@@ -121,17 +121,16 @@ def addHeader(landingBucket, inputfileName, infBucket, infFileName):
 
     local_path_inf = download_s3_obj(infBucket, infFileName)
 
-    with open(local_path_landing, 'r') as f, open(local_path_inf, 'r') as inf, open("/tmp/prediction.csv",'w') as out:
+    with open(local_path_landing, 'r') as f, open(local_path_inf, 'r') as inf, open("/tmp/prediction.csv", 'w') as out:
         header = f.readline()
 
-        header = "Predictions," + header
+        header = header + ",Predictions\n"
 
         out.write(header)
 
         xlines = inf.readlines()
-        ylines = f.readlines()
-        for line1, line2 in zip(xlines, ylines):
-            out.write("{} {}\n".format(line1.rstrip(), line2.rstrip()))
+        for line1 in xlines:
+            out.write("{}\n".format(line1.rstrip()))
 
     upload_s3_obj(infBucket, "header-output/some-out-file.csv", "/tmp/prediction.csv")
 
@@ -159,9 +158,11 @@ def lambda_handler(event, context):
 
     # Update the prediction file with headers"
 
-    # Reference to original file
-    landingBucket = 'veritoll-landing'
+    # Reference to original file, update the bucket name
+    landingBucket = 'rk-veritoll-landing'
     inputfileName = transform_input.split("/")[-1]
+
+    print(inputfileName)
 
     # reference to inference results file
     infFileName = "/".join(x for x in transform_output.split("/")[3:]) + "/" + transform_input.split("/")[-1] + ".out"
@@ -176,6 +177,6 @@ def lambda_handler(event, context):
 
     # Send notification of success
 
-    sendSNSMessage("Prediction Updated for Next 180days starting {}".format(datetime.now().strftime("%Y-%b-%d")))
+    sendSNSMessage("Anomaly Preductions Created and saved at {}".format(datetime.now().strftime("%Y-%b-%d")))
 
     return 200
