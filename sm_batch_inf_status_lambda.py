@@ -124,7 +124,7 @@ def addHeader(landingBucket, inputfileName, infBucket, infFileName):
     with open(local_path_landing, 'r') as f, open(local_path_inf, 'r') as inf, open("/tmp/prediction.csv", 'w') as out:
         header = f.readline()
 
-        header = header + ",Predictions\n"
+        header = header.rstrip() + ",Predictions\n"
 
         out.write(header)
 
